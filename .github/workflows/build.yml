@@ -1,4 +1,4 @@
-name: Build Kernel
+name: Android Kernel CI
 
 on:
   workflow_dispatch:
@@ -8,37 +8,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
+    - name: Checkout kernel source
       uses: actions/checkout@v4
 
-    - name: Set up environment
+    - name: Setup dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y git bc bison flex libssl-dev make clang lld \
-        libncurses5-dev gcc-aarch64-linux-gnu
+        sudo apt-get install -y bc bison flex build-essential libssl-dev \
+          libncurses5-dev lz4 liblz4-tool python-is-python3 zip \
+          libelf-dev libncurses-dev ccache clang lld libc++-dev
 
-    - name: Clone kernel source
+    - name: Clone toolchain
       run: |
-        git clone --depth=1 https://github.com/rm6p/android_kernel_realme_sm7125 kernel
-        cd kernel
-        # Enable UVC Gadget support
-        sed -i '/CONFIG_USB_G_WEBCAM/d' arch/arm64/configs/RMX2061_defconfig
-        echo "CONFIG_USB_G_WEBCAM=m" >> arch/arm64/configs/RMX2061_defconfig
+        git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
 
-    - name: Compile kernel
+    - name: Kernel config
       run: |
-        cd kernel
         export ARCH=arm64
         export SUBARCH=arm64
-        export CROSS_COMPILE=aarch64-linux-gnu-
-        make RMX2061_defconfig
-        make -j$(nproc)
+        export PATH=$PWD/clang/bin:$PATH
+        make O=out YOUR_DEFCONFIG
 
-    - name: Package boot image (WIP)
-      run: echo "Packing not yet configured"
+    - name: Build kernel
+      run: |
+        export ARCH=arm64
+        export SUBARCH=arm64
+        export PATH=$PWD/clang/bin:$PATH
+        make O=out -j$(nproc) CC=clang
 
-    - name: Upload Image.gz-dtb
-      uses: actions/upload-artifact@v4
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
       with:
-        name: Image.gz-dtb
-        path: kernel/arch/arm64/boot/Image.gz-dtb
+        name: kernel-out
+        path: out/arch/arm64/boot/
