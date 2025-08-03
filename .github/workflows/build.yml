@@ -1,0 +1,45 @@
+name: Build Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Set up environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git bc bison flex libssl-dev make clang lld \
+        libncurses5-dev gcc-aarch64-linux-gnu
+
+    - name: Clone kernel source
+      run: |
+        git clone --depth=1 https://github.com/rm6p/android_kernel_realme_sm7125 kernel
+        cd kernel
+
+        # Enable UVC Gadget support
+        sed -i '/CONFIG_USB_G_WEBCAM/d' arch/arm64/configs/RMX2061_defconfig
+        echo "CONFIG_USB_G_WEBCAM=m" >> arch/arm64/configs/RMX2061_defconfig
+
+    - name: Compile kernel
+      run: |
+        cd kernel
+        export ARCH=arm64
+        export SUBARCH=arm64
+        export CROSS_COMPILE=aarch64-linux-gnu-
+        make RMX2061_defconfig
+        make -j$(nproc)
+
+    - name: Package boot image (WIP)
+      run: echo "Packing not yet configured"
+
+    - name: Upload Image.gz-dtb
+      uses: actions/upload-artifact@v3
+      with:
+        name: Image.gz-dtb
+        path: kernel/arch/arm64/boot/Image.gz-dtb
