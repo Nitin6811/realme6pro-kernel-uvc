@@ -9,7 +9,7 @@ jobs:
 
     steps:
     - name: Checkout repo
-      uses: actions/upload-artifact@v4
+      uses: actions/checkout@v4
 
     - name: Set up environment
       run: |
@@ -21,7 +21,6 @@ jobs:
       run: |
         git clone --depth=1 https://github.com/rm6p/android_kernel_realme_sm7125 kernel
         cd kernel
-
         # Enable UVC Gadget support
         sed -i '/CONFIG_USB_G_WEBCAM/d' arch/arm64/configs/RMX2061_defconfig
         echo "CONFIG_USB_G_WEBCAM=m" >> arch/arm64/configs/RMX2061_defconfig
@@ -39,7 +38,7 @@ jobs:
       run: echo "Packing not yet configured"
 
     - name: Upload Image.gz-dtb
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Image.gz-dtb
         path: kernel/arch/arm64/boot/Image.gz-dtb
